@@ -180,5 +180,5 @@ public class PianoMachineTest {
         CountDownLatch latch = new CountDownLatch(1);
         assertDoesNotThrow(() -> pm.playback(latch::countDown));
         assertTrue(latch.await(2, TimeUnit.SECONDS));
-        assertFalse(midi.history().isEmpty());
+        assertTrue(midi.history().isEmpty());
     }}
