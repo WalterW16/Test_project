@@ -1,5 +1,6 @@
 name: Automated Tests CI
 
+# Тригери: коли запускати цей пайплайн
 on:
   push:
     branches: [ "main" ]
@@ -7,43 +8,52 @@ on:
     branches: [ "main" ]
 
 jobs:
-  ubuntu-build-and-test:
+  test:
+    # Віртуальна машина, на якій все буде працювати
     runs-on: ubuntu-24.04
     
     defaults:
       run:
-        # Прибрано "Test_project/", залишено лише назву папки з проєктом
-        working-directory: ./lab-2-project 
-        
+        working-directory: ./lab-2-project
+
     steps:
-    - uses: actions/checkout@v4
-    
+    # 1. Завантажуємо код з репозиторію на Runner
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    # 2. Встановлюємо потрібне середовище (Java JDK 25)
     - name: Set up JDK 25
       uses: actions/setup-java@v4
       with:
         java-version: '25'
         distribution: 'temurin'
-        
+
+    # 3. Встановлюємо залежності та налаштовуємо Gradle i ALSA
     - name: Setup Gradle
       uses: gradle/actions/setup-gradle@af1da67850ed9a4cedd57bfd976089dd991e2582 # v4.0.0
       with:
         gradle-version: '9.1.0'
-        
+
     - name: Setup ALSA Null Output
       run: |
         sudo apt-get update
         sudo apt-get install -y libasound2-plugins
         echo "pcm.!default { type null }" > ~/.asoundrc
         echo "ctl.!default { type null }" >> ~/.asoundrc
-        
-    - name: Build with Gradle 9.1.0
-      run: gradle build
-      
+
+    - name: Build project
+      run: gradle build -x test  # Збираємо проєкт без запуску тестів (вони будуть далі)
+
+    # 4. Запускаємо самі тести
+    - name: Run Tests
+      run: |
+        gradle test  # Запуск тестів через Gradle замість pytest, бо проєкт на Java
+
+    # 5. Завантажуємо артефакти зі звітами тестів
     - name: Upload Test Report
       if: always()
       uses: actions/upload-artifact@v4
       with:
         name: test-results
-        # Тут також прибрано "Test_project/"
-        path: lab-2-project/build/reports/tests/test/ 
+        path: lab-2-project/build/reports/tests/test/
         retention-days: 1
